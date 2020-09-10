@@ -10,7 +10,7 @@ namespace OfficeFireSync.Excel
     public class RelationalTableExcelSyncer : ExcelSyncer
     {
         private string primaryKey;
-        private string foreignKey = "FK";
+        private string foreignKey = "fK";
         private string sheetName;
         private Dictionary<string, IXLTable> relatedTables;
 
@@ -49,16 +49,16 @@ namespace OfficeFireSync.Excel
             return document;
         }
 
-        protected virtual IDictionary<string, object> RowToField(IXLRangeRow row, IList<string> headers)
+        protected virtual IDictionary<string, object> RowToField(IXLRangeRow row, IList<string> fieldNames)
         {
             IDictionary<string, object> document = new Dictionary<string, object>();
             var count = 0;
 
             foreach (var cell in row.Cells())
             {
-                if (headers[count] != foreignKey)
+                if (fieldNames[count] != foreignKey)
                 {
-                    document.Add(headers[count], CellToField(document, cell));
+                    document.Add(fieldNames[count], CellToField(document, cell));
                 }
 
                 count++;
@@ -67,13 +67,21 @@ namespace OfficeFireSync.Excel
             return document;
         }
 
-        protected virtual IList<object> SyncRelatedTable(IXLTable table, string keyValue)
+        protected virtual IList<object> SyncRelatedTable(IXLTable table, string primaryKeyValue)
         {
-            var result = new List<object>();
-            var headers = table.Rows().First().Cells().Select(el => (string)el.Value).ToList();
-            var rows = table.Rows().Skip(1).Where(el => (string)el.Cell(1).Value == keyValue);
-
-            return rows.Select(el => RowToField(el, headers)).ToList<object>();
+            var columnHeads = table
+                .Rows()
+                .First()
+                .Cells()
+                .Select(el => ((string)el.Value).ToCamel())
+                .ToList();
+            
+            return table
+                .Rows()
+                .Skip(1)
+                .Where(el => (string)el.Cell(1).Value == primaryKeyValue)
+                .Select(el => RowToField(el, columnHeads))
+                .ToList<object>();
         }
     }
 }

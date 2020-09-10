@@ -73,7 +73,7 @@ namespace OfficeFireSync.Excel
         protected virtual void SyncTable(IXLTable table, string primaryKey)
         {
             var rows = table.Rows().Skip(1);
-            var fieldNames = table.Rows()
+            var columnHeads = table.Rows()
                 .First()
                 .Cells()
                 .Select(el => ((string)el.Value).ToCamel())
@@ -81,7 +81,7 @@ namespace OfficeFireSync.Excel
             
             foreach (var row in rows)
             {
-                var document = RowToDocument(row, fieldNames);
+                var document = RowToDocument(row, columnHeads);
    
                 if (documentIds.ContainsKey((string)document[primaryKey]))
                 {
