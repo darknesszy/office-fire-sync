@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
 using Google.Cloud.Firestore;
 using System;
 using System.Collections.Generic;
@@ -41,17 +40,8 @@ namespace OfficeFireSync.Excel
                 OnWorksheetSync(worksheet, primaryKey);
             }
 
+            RemoveDanglingDocument();
             await batch.CommitAsync();
-
-            //var products = new List<object>();
-
-            //foreach (var worksheet in workbook.Worksheets)
-            //{
-            //    var documents = ExtractDocumentsFromWorkSheet(workbook.Worksheet(worksheet.Name));
-            //    products.AddRange(documents);
-            //}
-
-            //await SendDocuments(new Stack(products), "product");
             Console.WriteLine("# Synchronise Complete...");
         }
 
@@ -82,11 +72,12 @@ namespace OfficeFireSync.Excel
             foreach (var row in rows)
             {
                 var document = RowToDocument(row, columnHeads);
-   
+
                 if (documentIds.ContainsKey((string)document[primaryKey]))
                 {
                     var id = documentIds[(string)document[primaryKey]];
-                    batch.Set(collectionRef.Document(id), document);
+                    batch.Update(collectionRef.Document(id), document);
+                    documentIds.Remove((string)document[primaryKey]);
                     Console.WriteLine($"Updating {document[primaryKey]}");
                 }
                 else
@@ -131,116 +122,14 @@ namespace OfficeFireSync.Excel
             }
         }
 
-
-        //public async Task SendDocuments(Stack documents, string collectionName)
-        //{
-        //    WriteBatch batch = db.StartBatch();
-        //    var collection = db.Collection(collectionName);
-
-        //    foreach (var document in documents)
-        //    {
-        //        batch.Set(collection.Document(), document);
-        //    }
-
-        //    await batch.CommitAsync();
-        //}
-
-        //public IList<object> ExtractDocumentsFromWorkSheet(IXLWorksheet worksheet)
-        //{
-        //    var sheetName = worksheet.Name.Replace(" ", "");
-        //    var primaryTable = worksheet.Tables.First(el => el.Name == sheetName);
-        //    var subTables = worksheet.Tables
-        //        .Where(el => el.Name != primaryTable.Name)
-        //        .ToDictionary(el => el.Name, el => el);
-
-        //    return TableToList(
-        //        primaryTable,
-        //        (dict, row) => {
-        //            foreach (var subTable in subTables)
-        //            {
-        //                var fieldName = subTable.Key.Replace(sheetName, "").ToCamel();
-        //                var fieldValues = TableToList(subTable.Value, (string)row.Cells().First().Value);
-
-        //                dict.Add(
-        //                    fieldName,
-        //                    fieldValues.Count() == 1 ? fieldValues[0] : fieldValues
-        //                );
-        //            }
-        //        }
-        //    );
-        //}
-
-        //private IList<object> TableToList(IXLTable table, string primaryKey)
-        //{
-        //    return TableToList(table, (dict, row) => { }, primaryKey);
-        //}
-
-        //private IList<object> TableToList(IXLTable table, Action<IDictionary<string, object>, IXLRangeRow> perRow, string primaryKey)
-        //{
-        //    var result = new List<object>();
-        //    var headers = table.Rows().First().Cells().Select(el => (string)el.Value).ToList();
-        //    var rows = table.Rows().Skip(1).Where(el => (string)el.Cell(1).Value == primaryKey);
-
-        //    foreach (var row in rows)
-        //    {
-        //        var dict = RowToDictionary(row, headers, perRow);
-        //        result.Add(dict);
-        //    }
-
-        //    return result;
-        //}
-
-        //private IList<object> TableToList(IXLTable table, Action<IDictionary<string, object>, IXLRangeRow> perRow)
-        //{
-        //    var category = table.Name.ToCamel();
-        //    var result = new List<object>();
-        //    var headers = table.Rows().First().Cells().Select(el => (string)el.Value).ToList();
-        //    var rows = table.Rows().Skip(1);
-
-        //    foreach (var row in rows)
-        //    {
-        //        var dict = RowToDictionary(row, headers, perRow);
-        //        dict.Add("category", category);
-        //        result.Add(dict);
-        //    }
-
-        //    return result;
-        //}
-
-        //private IDictionary<string, object> RowToDictionary(IXLRangeRow row, IList<string> headers, Action<IDictionary<string, object>, IXLRangeRow> perRow)
-        //{
-        //    IDictionary<string, object> dict = new Dictionary<string, object>();
-        //    var count = 0;
-
-        //    foreach (var cell in row.Cells())
-        //    {
-        //        if(headers[count] != foreignKey)
-        //        {
-        //            var header = headers[count].ToCamel();
-        //            if (cell.DataType == XLDataType.DateTime)
-        //            {
-        //                dict.Add(header, ((DateTime)cell.Value).ToUniversalTime());
-        //            }
-        //            else if (cell.DataType == XLDataType.Number && cell.Style.NumberFormat.Format == "_-\"$\"* #,##0.00_-;\\-\"$\"* #,##0.00_-;_-\"$\"* \"-\"??_-;_-@_-")
-        //            {
-        //                dict.Add(header, (double)cell.Value * 100);
-        //            }
-        //            else
-        //            {
-        //                if (cell.DataType == XLDataType.Text && Uri.IsWellFormedUriString((string)cell.Value, UriKind.RelativeOrAbsolute))
-        //                {
-        //                    PreprocessMedia(dict, (string)cell.Value);
-        //                }
-        //                dict.Add(header, cell.Value);
-        //            }
-        //        }
-
-        //        count++;
-        //    }
-
-        //    perRow(dict, row);
-        //    return dict;
-        //}
+        private void RemoveDanglingDocument()
+        {
+            foreach (var keyValue in documentIds)
+            {
+                batch.Delete(collectionRef.Document(keyValue.Value));
+                Console.WriteLine($"Deleting {keyValue.Key}");
+            }
+        }
 
         private void PreprocessMedia(IDictionary<string, object> dict, string uri)
         {
