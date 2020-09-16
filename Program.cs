@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using OfficeFireSync.Excel;
+using OfficeFireSync.Word;
 
 namespace OfficeFireSync
 {
@@ -15,13 +16,16 @@ namespace OfficeFireSync
         {
             ConfigureServices();
             ExcelSyncer excelSyncer = serviceProvider.GetService<ExcelSyncer>();
-            await excelSyncer.SyncToFireStore();
+            WordETL wordETL = serviceProvider.GetService<WordETL>();
+            wordETL.Extract();
+            //await excelSyncer.SyncToFireStore();
         }
 
         private static void ConfigureServices()
         {
             var services = new ServiceCollection();
             services.AddTransient<ExcelSyncer, ProductExcelSyncer>();
+            services.AddTransient<WordETL, WordETL>();
             services.AddTransient<ImagePreprocessor, ImagePreprocessor>();
 
             serviceProvider = services.BuildServiceProvider();
