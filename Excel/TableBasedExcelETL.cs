@@ -7,19 +7,19 @@ using System.Text;
 
 namespace OfficeFireSync.Excel
 {
-    public class RelationalTableExcelSyncer : ExcelSyncer
+    public abstract class TableBasedExcelETL : ExcelETL
     {
         private string primaryKey;
         private string foreignKey = "fK";
         private string sheetName;
         private Dictionary<string, IXLTable> relatedTables;
 
-        public RelationalTableExcelSyncer(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
+        public TableBasedExcelETL(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
         {
 
         }
 
-        protected override void OnWorksheetSync(IXLWorksheet worksheet, string primaryKey)
+        protected override void SyncWorksheet(IXLWorksheet worksheet, string primaryKey)
         {
             this.primaryKey = primaryKey;
             sheetName = worksheet.Name.Replace(" ", "");
@@ -28,7 +28,35 @@ namespace OfficeFireSync.Excel
                 .Where(el => el.Name != primaryTable.Name)
                 .ToDictionary(el => el.Name, el => el);
 
-            SyncTable(primaryTable, primaryKey);
+            TableToCollection(primaryTable, primaryKey);
+        }
+
+        protected virtual void TableToCollection(IXLTable table, string primaryKey)
+        {
+            var rows = table.Rows().Skip(1);
+            var columnHeads = table.Rows()
+                .First()
+                .Cells()
+                .Select(el => ((string)el.Value).ToCamel())
+                .ToList();
+
+            foreach (var row in rows)
+            {
+                var document = RowToDocument(row, columnHeads);
+
+                if (documentIds.ContainsKey((string)document[primaryKey]))
+                {
+                    var id = documentIds[(string)document[primaryKey]];
+                    batch.Update(collectionRef.Document(id), document);
+                    documentIds.Remove((string)document[primaryKey]);
+                    Console.WriteLine($"Updating {document[primaryKey]}");
+                }
+                else
+                {
+                    batch.Create(collectionRef.Document(), document);
+                    Console.WriteLine($"Creating {document[primaryKey]}");
+                }
+            }
         }
 
         protected override IDictionary<string, object> RowToDocument(IXLRangeRow row, IList<string> headers)

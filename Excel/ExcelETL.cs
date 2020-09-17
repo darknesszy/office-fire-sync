@@ -11,16 +11,17 @@ using System.Collections;
 
 namespace OfficeFireSync.Excel
 {
-    public abstract class ExcelSyncer
+    public abstract class ExcelETL
     {
         private readonly string mediaPath = Environment.GetEnvironmentVariable("MEDIA_PATH");
         private readonly FirestoreDb db;
         private readonly ImagePreprocessor imagePreprocessor;
-        private WriteBatch batch;
-        private CollectionReference collectionRef;
+        protected WriteBatch batch;
+        protected CollectionReference collectionRef;
         protected IDictionary<string, string> documentIds;
+        protected abstract string PrimaryKey { get; }
 
-        public ExcelSyncer(ImagePreprocessor imagePreprocessor)
+        public ExcelETL(ImagePreprocessor imagePreprocessor)
         {
             this.imagePreprocessor = imagePreprocessor;
 
@@ -28,16 +29,16 @@ namespace OfficeFireSync.Excel
             db = FirestoreDb.Create(project);
         }
 
-        public async Task SyncToFireStore()
+        public async Task SyncToFireStore(string filePath)
         {
-            var primaryKey = "name";
             batch = db.StartBatch();
-            documentIds = await GetDocumentIds("product", primaryKey);
-            var workbook = new XLWorkbook(Environment.GetEnvironmentVariable("MANIFEST_PATH"));
+            documentIds = await GetDocumentIds("product", PrimaryKey);
+
+            var workbook = new XLWorkbook(filePath);
 
             foreach (var worksheet in workbook.Worksheets)
             {
-                OnWorksheetSync(worksheet, primaryKey);
+                SyncWorksheet(worksheet, PrimaryKey);
             }
 
             RemoveDanglingDocument();
@@ -48,45 +49,26 @@ namespace OfficeFireSync.Excel
         protected async virtual Task<IDictionary<string, string>> GetDocumentIds(string collectionName, string primaryKey)
         {
             collectionRef = db.Collection(collectionName);
-            QuerySnapshot snapshot = await collectionRef.GetSnapshotAsync();
-            return snapshot.Documents.ToDictionary(
-                el => {
-                    el.TryGetValue(primaryKey, out string keyValue);
-                    return keyValue;
-                },
-                el => el.Id
-            );
-        }
-
-        protected abstract void OnWorksheetSync(IXLWorksheet worksheet, string primaryKey);
-
-        protected virtual void SyncTable(IXLTable table, string primaryKey)
-        {
-            var rows = table.Rows().Skip(1);
-            var columnHeads = table.Rows()
-                .First()
-                .Cells()
-                .Select(el => ((string)el.Value).ToCamel())
-                .ToList();
-            
-            foreach (var row in rows)
+            try
             {
-                var document = RowToDocument(row, columnHeads);
-
-                if (documentIds.ContainsKey((string)document[primaryKey]))
-                {
-                    var id = documentIds[(string)document[primaryKey]];
-                    batch.Update(collectionRef.Document(id), document);
-                    documentIds.Remove((string)document[primaryKey]);
-                    Console.WriteLine($"Updating {document[primaryKey]}");
-                }
-                else
-                {
-                    batch.Create(collectionRef.Document(), document);
-                    Console.WriteLine($"Creating {document[primaryKey]}");
-                }
+                QuerySnapshot snapshot = await collectionRef.GetSnapshotAsync();
+                return snapshot.Documents.ToDictionary(
+                    el => {
+                        el.TryGetValue(primaryKey, out string keyValue);
+                        return keyValue;
+                    },
+                    el => el.Id
+                );
+            }
+            catch (Exception caughtEx)
+            {
+                throw new Exception("Unknown Exception Thrown: "
+                       + "\n  Type:    " + caughtEx.GetType().Name
+                       + "\n  Message: " + caughtEx.Message);
             }
         }
+
+        protected abstract void SyncWorksheet(IXLWorksheet worksheet, string primaryKey);
 
         protected virtual IDictionary<string, object> RowToDocument(IXLRangeRow row, IList<string> fieldNames)
         {

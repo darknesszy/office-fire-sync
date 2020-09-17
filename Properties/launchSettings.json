@@ -2,12 +2,11 @@
   "profiles": {
     "OfficeFireSync": {
       "commandName": "Project",
+      "commandLineArgs": "-r \"C:\\Users\\micha\\OneDrive\\CreateLocal\\Documents\\products_export_1.xlsx\" -e \"shopify\"",
       "environmentVariables": {
-        "GOOGLE_APPLICATION_CREDENTIALS": "C:\\Users\\micha\\Projects\\Alpha Centauri\\alpha-centauri-staging-firebase-adminsdk-xn15b-d73adcd0eb.json",
+        "GOOGLE_APPLICATION_CREDENTIALS": "C:\\Users\\micha\\Projects\\CreateLocal\\Senior Website\\senior-website-dev-firebase-adminsdk-kc2zj-1899218e10.json",
         "MEDIA_PATH": "C:\\Users\\micha\\Projects\\Alpha Centauri\\blob-storage",
-        "CONTENT_PATH": "C:\\Users\\micha\\OneDrive\\Merry Maybe\\Documents\\Website Contents.docx",
-        "PROJECT_ID": "alpha-centauri-staging",
-        "MANIFEST_PATH": "C:\\Users\\micha\\OneDrive\\Merry Maybe\\Documents\\Product Manifest.xlsx"
+        "PROJECT_ID": "senior-website-dev"
       }
     }
   }

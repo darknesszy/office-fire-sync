@@ -6,11 +6,12 @@ using System.Text;
 
 namespace OfficeFireSync.Excel
 {
-    public class ProductExcelSyncer : RelationalTableExcelSyncer
+    public class ProductExcelETL : TableBasedExcelETL
     {
         private string category;
+        protected override string PrimaryKey { get => "name"; }
 
-        public ProductExcelSyncer(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
+        public ProductExcelETL(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
         {
 
         }
@@ -23,10 +24,10 @@ namespace OfficeFireSync.Excel
             return document;
         }
 
-        protected override void SyncTable(IXLTable table, string primaryKey)
+        protected override void TableToCollection(IXLTable table, string primaryKey)
         {
             category = table.Name.ToCamel();
-            base.SyncTable(table, primaryKey);
+            base.TableToCollection(table, primaryKey);
         }
     }
 }
