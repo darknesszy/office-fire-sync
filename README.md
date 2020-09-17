@@ -8,4 +8,4 @@ Sychronise FireStore with Office suite documents.
 	* MEDIA_PATH: Folder with images that are used with the data (Not ready, just add a random path for now).
 2. Restore dependencies with dotnet restore
 3. Run project with CLI command:
-	* Shopify: -r "<path to the xlsx file>" -e "shopify"
+	* Shopify: -r "path to the xlsx file" -e "shopify"
