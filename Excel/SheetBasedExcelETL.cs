@@ -8,10 +8,11 @@ using System.Text.RegularExpressions;
 
 namespace OfficeFireSync.Excel
 {
-    public abstract class SheetBasedExcelETL : ExcelETL
+    public class SheetBasedExcelETL : ExcelETL
     {
-        protected virtual Regex Separaters => separaters;
-        private readonly Regex separaters = new Regex(@"[\W\d]");
+        private readonly Regex separators = new Regex(@"[\W\d]");
+        protected virtual Regex Separators => separators;
+        protected override string PrimaryKey => "color";
 
         public SheetBasedExcelETL(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
         {
@@ -51,20 +52,20 @@ namespace OfficeFireSync.Excel
 
         private string NameSection(string name, int section)
         {
-            var sections = Separaters.Split(name);
+            var sections = Separators.Split(name);
             return sections[section];
         }
 
         private int SectionIndex(string name, int section)
         {
-            var matches = Separaters.Matches(name);
+            var matches = Separators.Matches(name);
             return Int32.Parse(matches[section].Value);
         }
 
         protected override IDictionary<string, object> RowToDocument(IXLRangeRow row, IList<string> fieldNames)
         {
             var tester = "Option1Name";
-            var a = separaters.Matches(tester);
+            var a = separators.Matches(tester);
             var b = a[0].Value;
 
             var cellGroups = fieldNames

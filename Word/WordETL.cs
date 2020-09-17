@@ -21,7 +21,7 @@ namespace OfficeFireSync.Word
         private readonly FirestoreDb db;
         private WriteBatch batch;
         private CollectionReference collectionRef;
-        private readonly string documentPath = Environment.GetEnvironmentVariable("CONTENT_PATH");
+        private string documentPath;
         protected IDictionary<string, string> documentIds;
 
         public WordETL()
@@ -134,14 +134,15 @@ namespace OfficeFireSync.Word
 
         }
 
-        public async void SyncToFirebase()
+        public async Task SyncToFirebase(string filePath)
         {
-            var primaryKey = "name";
-            batch = db.StartBatch();
-            documentIds = await GetDocumentIds("content", primaryKey);
+            //var primaryKey = "name";
+            //batch = db.StartBatch();
+            //documentIds = await GetDocumentIds("content", primaryKey);
 
+            this.documentPath = filePath;
             var documents = Extract();
-
+            var primaryKey = "name";
         }
 
         protected async virtual Task<IDictionary<string, string>> GetDocumentIds(string collectionName, string primaryKey)

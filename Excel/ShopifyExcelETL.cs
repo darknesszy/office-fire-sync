@@ -7,9 +7,9 @@ namespace OfficeFireSync.Excel
 {
     public class ShopifyExcelETL : SheetBasedExcelETL
     {
-        protected override Regex Separaters => separaters;
+        protected override Regex Separators => separaters;
         private readonly Regex separaters = new Regex(@"[//\d]");
-        protected override string PrimaryKey { get => "handle"; }
+        protected override string PrimaryKey => "handle";
 
         public ShopifyExcelETL(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
         {

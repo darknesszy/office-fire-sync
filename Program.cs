@@ -1,5 +1,4 @@
-﻿using Google.Cloud.Firestore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,34 +15,43 @@ namespace OfficeFireSync
         static async Task Main(string[] args)
         {
             ConfigureServices();
-
-            await CommandLine.Parser.Default.ParseArguments<Options>(args)
-              .WithParsedAsync(RunOptions);
+            await CommandLine.Parser.Default.ParseArguments<Options>(args).WithParsedAsync(RunOptions);
         }
 
         static async Task RunOptions(Options opts)
         {
-            if (opts.ExcelType != null)
+            if (opts.ExcelMode != null)
             {
-                if (opts.ExcelType == "default")
+                switch (opts.ExcelMode)
                 {
-                    ProductExcelETL excelETL = serviceProvider.GetService<ProductExcelETL>();
-                    await excelETL.SyncToFireStore(opts.InputFile);
-                }
-                else if (opts.ExcelType == "shopify")
-                {
-                    ShopifyExcelETL excelETL = serviceProvider.GetService<ShopifyExcelETL>();
-                    await excelETL.SyncToFireStore(opts.InputFile);
+                    case "table":
+                        ProductExcelETL tableBased = serviceProvider.GetService<ProductExcelETL>();
+                        await tableBased.SyncToFireStore(opts.InputFile, opts.CollectionName);
+                        break;
+                    case "sheet":
+                        SheetBasedExcelETL sheetBased = serviceProvider.GetService<SheetBasedExcelETL>();
+                        await sheetBased.SyncToFireStore(opts.InputFile, opts.CollectionName);
+                        break;
+                    case "shopify":
+                        ShopifyExcelETL shopify = serviceProvider.GetService<ShopifyExcelETL>();
+                        await shopify.SyncToFireStore(opts.InputFile, opts.CollectionName);
+                        break;
+                    default:
+                        Console.WriteLine("# Unsupported Excel ETL Model selected!");
+                        break;
                 }
             }
-            else if (opts.WordType != null)
+            else if (opts.WordMode != null)
             {
-                WordETL wordETL = serviceProvider.GetService<WordETL>();
-                wordETL.Extract();
+                if (opts.WordMode == "heading")
+                {
+                    WordETL wordETL = serviceProvider.GetService<WordETL>();
+                    await wordETL.SyncToFirebase(opts.InputFile);
+                }
             }
             else
             {
-                throw new NotImplementedException("# Unsupported option parsed");
+                Console.WriteLine("# Unsupported option parsed!");
             }
         }
 
@@ -52,6 +60,7 @@ namespace OfficeFireSync
             var services = new ServiceCollection();
             services.AddTransient<ProductExcelETL, ProductExcelETL>();
             services.AddTransient<ShopifyExcelETL, ShopifyExcelETL>();
+            services.AddTransient<SheetBasedExcelETL, SheetBasedExcelETL>();
             services.AddTransient<WordETL, WordETL>();
             services.AddTransient<ImagePreprocessor, ImagePreprocessor>();
 
@@ -62,12 +71,14 @@ namespace OfficeFireSync
         {
             [Option('r', "read", Required = true, HelpText = "Input file to be processed.")]
             public string InputFile { get; set; }
+            [Option('s', "sync", Required = true, HelpText = "Collection name to sync to.")]
+            public string CollectionName { get; set; }
 
-            [Option('e', "excel", Required = false, HelpText = "Type of Excel configuration.")]
-            public string ExcelType { get; set; }
+            [Option('e', "excel", Required = false, HelpText = "Mode of Excel configuration.")]
+            public string ExcelMode { get; set; }
 
-            [Option('w', "word", Required = false, HelpText = "Type of Word configuration.")]
-            public string WordType { get; set; }
+            [Option('w', "word", Required = false, HelpText = "Mode of Word configuration.")]
+            public string WordMode { get; set; }
         }
     }
 }

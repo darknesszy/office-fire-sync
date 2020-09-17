@@ -29,10 +29,10 @@ namespace OfficeFireSync.Excel
             db = FirestoreDb.Create(project);
         }
 
-        public async Task SyncToFireStore(string filePath)
+        public async Task SyncToFireStore(string filePath, string collectionName)
         {
             batch = db.StartBatch();
-            documentIds = await GetDocumentIds("product", PrimaryKey);
+            documentIds = await GetDocumentIds(collectionName, PrimaryKey);
 
             var workbook = new XLWorkbook(filePath);
 
