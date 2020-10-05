@@ -84,10 +84,10 @@ namespace OfficeFireSync
             [Option('s', "sync", Required = true, HelpText = "Collection name to sync to.")]
             public string CollectionName { get; set; }
 
-            [Option('e', "excel", Required = false, HelpText = "Mode of Excel configuration.")]
+            [Option("excel", Required = false, HelpText = "Mode of Excel configuration.")]
             public string ExcelMode { get; set; }
 
-            [Option('w', "word", Required = false, HelpText = "Mode of Word configuration.")]
+            [Option("word", Required = false, HelpText = "Mode of Word configuration.")]
             public string WordMode { get; set; }
         }
     }
