@@ -43,10 +43,19 @@ namespace OfficeFireSync
             }
             else if (opts.WordMode != null)
             {
-                if (opts.WordMode == "heading")
+                switch (opts.WordMode)
                 {
-                    WordETL wordETL = serviceProvider.GetService<WordETL>();
-                    await wordETL.SyncToFirebase(opts.InputFile);
+                    case "heading":
+                        WordETL wordETL = serviceProvider.GetService<WordETL>();
+                        await wordETL.SyncToFirebase(opts.InputFile);
+                        break;
+                    case "html":
+                        HTMLWordETL html = serviceProvider.GetService<HTMLWordETL>();
+                        html.Test(opts.InputFile);
+                        break;
+                    default:
+                        Console.WriteLine("# Unsupported Excel ETL Model selected!");
+                        break;
                 }
             }
             else
@@ -62,6 +71,7 @@ namespace OfficeFireSync
             services.AddTransient<ShopifyExcelETL, ShopifyExcelETL>();
             services.AddTransient<SheetBasedExcelETL, SheetBasedExcelETL>();
             services.AddTransient<WordETL, WordETL>();
+            services.AddTransient<HTMLWordETL, HTMLWordETL>();
             services.AddTransient<ImagePreprocessor, ImagePreprocessor>();
 
             serviceProvider = services.BuildServiceProvider();

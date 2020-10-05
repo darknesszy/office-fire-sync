@@ -18,7 +18,7 @@ namespace OfficeFireSync.Excel
         private readonly ImagePreprocessor imagePreprocessor;
         protected WriteBatch batch;
         protected CollectionReference collectionRef;
-        protected IDictionary<string, string> documentIds;
+        protected IDictionary<string, string> existingDocumentIds;
         protected abstract string PrimaryKey { get; }
 
         public ExcelETL(ImagePreprocessor imagePreprocessor)
@@ -32,7 +32,7 @@ namespace OfficeFireSync.Excel
         public async Task SyncToFireStore(string filePath, string collectionName)
         {
             batch = db.StartBatch();
-            documentIds = await GetDocumentIds(collectionName, PrimaryKey);
+            existingDocumentIds = await GetDocumentIds(collectionName, PrimaryKey);
 
             var workbook = new XLWorkbook(filePath);
 
@@ -106,7 +106,7 @@ namespace OfficeFireSync.Excel
 
         private void RemoveDanglingDocument()
         {
-            foreach (var keyValue in documentIds)
+            foreach (var keyValue in existingDocumentIds)
             {
                 batch.Delete(collectionRef.Document(keyValue.Value));
                 Console.WriteLine($"Deleting {keyValue.Key}");

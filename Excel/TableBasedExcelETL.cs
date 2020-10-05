@@ -9,9 +9,9 @@ namespace OfficeFireSync.Excel
 {
     public abstract class TableBasedExcelETL : ExcelETL
     {
-        private string primaryKey;
-        private string foreignKey = "fK";
         private string sheetName;
+        private string foreignKey;
+        private IXLTable primaryTable;
         private Dictionary<string, IXLTable> relatedTables;
 
         public TableBasedExcelETL(ImagePreprocessor imagePreprocessor) : base(imagePreprocessor)
@@ -21,9 +21,10 @@ namespace OfficeFireSync.Excel
 
         protected override void SyncWorksheet(IXLWorksheet worksheet, string primaryKey)
         {
-            this.primaryKey = primaryKey;
+            foreignKey = worksheet.Name.ToCamel();
             sheetName = worksheet.Name.Replace(" ", "");
-            var primaryTable = worksheet.Tables.First(el => el.Name == sheetName);
+
+            primaryTable = worksheet.Tables.First(el => el.Name == sheetName);
             relatedTables = worksheet.Tables
                 .Where(el => el.Name != primaryTable.Name)
                 .ToDictionary(el => el.Name, el => el);
@@ -33,22 +34,22 @@ namespace OfficeFireSync.Excel
 
         protected virtual void TableToCollection(IXLTable table, string primaryKey)
         {
-            var rows = table.Rows().Skip(1);
+            var rows = table.Rows().Skip(1); // First row is the Column Head.
             var columnHeads = table.Rows()
                 .First()
                 .Cells()
-                .Select(el => ((string)el.Value).ToCamel())
+                .Select(el => (el.Value as string).ToCamel())
                 .ToList();
 
             foreach (var row in rows)
             {
                 var document = RowToDocument(row, columnHeads);
 
-                if (documentIds.ContainsKey((string)document[primaryKey]))
+                if (existingDocumentIds.ContainsKey(document[primaryKey] as string))
                 {
-                    var id = documentIds[(string)document[primaryKey]];
+                    var id = existingDocumentIds[document[primaryKey] as string];
                     batch.Update(collectionRef.Document(id), document);
-                    documentIds.Remove((string)document[primaryKey]);
+                    existingDocumentIds.Remove(document[primaryKey] as string);
                     Console.WriteLine($"Updating {document[primaryKey]}");
                 }
                 else
@@ -59,14 +60,14 @@ namespace OfficeFireSync.Excel
             }
         }
 
-        protected override IDictionary<string, object> RowToDocument(IXLRangeRow row, IList<string> headers)
+        protected override IDictionary<string, object> RowToDocument(IXLRangeRow row, IList<string> fieldNames)
         {
-            var document = base.RowToDocument(row, headers);
+            var document = base.RowToDocument(row, fieldNames);
 
             foreach (var relatedTable in relatedTables)
             {
                 var fieldName = relatedTable.Key.Replace(sheetName, "").ToCamel();
-                var fieldValues = SyncRelatedTable(relatedTable.Value, (string)row.Cells().First().Value);
+                var fieldValues = SyncRelatedTable(relatedTable.Value, row.Cells().First().Value as string);
 
                 document.Add(
                     fieldName,
@@ -97,17 +98,15 @@ namespace OfficeFireSync.Excel
 
         protected virtual IList<object> SyncRelatedTable(IXLTable table, string primaryKeyValue)
         {
-            var columnHeads = table
-                .Rows()
+            var columnHeads = table.Rows()
                 .First()
                 .Cells()
-                .Select(el => ((string)el.Value).ToCamel())
+                .Select(el => (el.Value as string).ToCamel())
                 .ToList();
             
-            return table
-                .Rows()
+            return table.Rows()
                 .Skip(1)
-                .Where(el => (string)el.Cell(1).Value == primaryKeyValue)
+                .Where(el => el.Cell(1).Value as string == primaryKeyValue)
                 .Select(el => RowToField(el, columnHeads))
                 .ToList<object>();
         }

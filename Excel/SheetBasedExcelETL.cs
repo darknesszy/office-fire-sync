@@ -35,11 +35,11 @@ namespace OfficeFireSync.Excel
                 var r = worksheet.Range(row.FirstCell(), row.Cell(columnHeads.Count() - 1)).FirstRow();
                 var document = RowToDocument(r, columnHeads);
 
-                if (documentIds.ContainsKey((string)document[primaryKey]))
+                if (existingDocumentIds.ContainsKey((string)document[primaryKey]))
                 {
-                    var id = documentIds[(string)document[primaryKey]];
+                    var id = existingDocumentIds[(string)document[primaryKey]];
                     batch.Update(collectionRef.Document(id), document);
-                    documentIds.Remove((string)document[primaryKey]);
+                    existingDocumentIds.Remove((string)document[primaryKey]);
                     Console.WriteLine($"Updating {document[primaryKey]}");
                 }
                 else

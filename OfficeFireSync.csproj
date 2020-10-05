@@ -11,6 +11,8 @@
     <PackageReference Include="FirebaseAdmin" Version="1.15.0" />
     <PackageReference Include="Google.Cloud.Firestore" Version="1.1.0-beta01" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.7" />
+    <PackageReference Include="OpenXmlPowerTools" Version="4.5.3.2" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
   </ItemGroup>
 
 </Project>
