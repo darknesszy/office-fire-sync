@@ -1,5 +1,5 @@
 # Office FireSync
-Sychronise FireStore with Open XML documents.
+Synchronise FireStore with Open XML documents.
 
 ** Currently only support manual run. Future updates will add change detection, allowing it to be hosted on a server.
 
