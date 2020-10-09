@@ -1,9 +1,11 @@
 ﻿using ClosedXML.Excel;
+using Google.Cloud.Firestore;
 using OfficeFireSync.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace OfficeFireSync.Excel
 {
@@ -18,6 +20,28 @@ namespace OfficeFireSync.Excel
         {
 
         }
+
+        protected async override Task<IDictionary<string, string>> GetDocumentIds(string collectionName, string primaryKey)
+        {
+            collectionRef = db.Collection(collectionName);
+            try
+            {
+                QuerySnapshot snapshot = await collectionRef.GetSnapshotAsync();
+                return snapshot.Documents.ToDictionary(
+                    el => MapDocumentId(el),
+                    el => el.Id
+                );
+            }
+            catch (Exception caughtEx)
+            {
+                throw new Exception("Unknown Exception Thrown: "
+                       + "\n  Type:    " + caughtEx.GetType().Name
+                       + "\n  Message: " + caughtEx.Message);
+            }
+        }
+
+        protected abstract string MapDocumentId(DocumentSnapshot document);
+        protected abstract string MapDocumentId(IDictionary<string, object> document);
 
         protected override void SyncWorksheet(IXLWorksheet worksheet, string primaryKey)
         {
@@ -44,18 +68,19 @@ namespace OfficeFireSync.Excel
             foreach (var row in rows)
             {
                 var document = RowToDocument(row, columnHeads);
+                var key = MapDocumentId(document);
 
-                if (existingDocumentIds.ContainsKey(document[primaryKey] as string))
+                if (existingDocumentIds.ContainsKey(key))
                 {
-                    var id = existingDocumentIds[document[primaryKey] as string];
+                    var id = existingDocumentIds[key];
                     batch.Update(collectionRef.Document(id), document);
-                    existingDocumentIds.Remove(document[primaryKey] as string);
-                    Console.WriteLine($"Updating {document[primaryKey]}");
+                    existingDocumentIds.Remove(key);
+                    Console.WriteLine($"Updating {key}");
                 }
                 else
                 {
                     batch.Create(collectionRef.Document(), document);
-                    Console.WriteLine($"Creating {document[primaryKey]}");
+                    Console.WriteLine($"Creating {key}");
                 }
             }
         }

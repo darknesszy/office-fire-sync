@@ -14,7 +14,7 @@ namespace OfficeFireSync.Excel
     public abstract class ExcelETL
     {
         private readonly string mediaPath = Environment.GetEnvironmentVariable("MEDIA_PATH");
-        private readonly FirestoreDb db;
+        protected readonly FirestoreDb db;
         private readonly ImagePreprocessor imagePreprocessor;
         protected WriteBatch batch;
         protected CollectionReference collectionRef;

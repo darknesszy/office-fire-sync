@@ -1,8 +1,11 @@
 ﻿using ClosedXML.Excel;
+using Google.Cloud.Firestore;
 using OfficeFireSync.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace OfficeFireSync.Excel
 {
@@ -28,6 +31,18 @@ namespace OfficeFireSync.Excel
         {
             category = table.Name.ToCamel();
             base.TableToCollection(table, primaryKey);
+        }
+
+        protected override string MapDocumentId(DocumentSnapshot document)
+        {
+            document.TryGetValue(PrimaryKey, out string primaryValue);
+            document.TryGetValue("category", out string categoryValue);
+            return primaryValue + categoryValue;
+        }
+
+        protected override string MapDocumentId(IDictionary<string, object> document)
+        {
+            return document[PrimaryKey] as string + document["category"] as string;
         }
     }
 }
